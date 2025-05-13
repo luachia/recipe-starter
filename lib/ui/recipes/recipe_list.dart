@@ -1,17 +1,18 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 // TODO: Add imports
 
 class RecipeList extends StatefulWidget {
-  const RecipeList({Key? key}) : super(key: key);
+  const RecipeList({super.key});
 
   @override
   RecipeListState createState() => RecipeListState();
 }
 
 class RecipeListState extends State<RecipeList> {
-  // TODO: Add key
+  static const String prefSearchKey = 'previousSearches';
   late TextEditingController searchTextController;
   final ScrollController _scrollController = ScrollController();
   List currentSearchList = [];
@@ -22,12 +23,12 @@ class RecipeListState extends State<RecipeList> {
   bool hasMore = false;
   bool loading = false;
   bool inErrorState = false;
-  // TODO: Add searches array
+  List<String> previousSearches = <String>[];
 
   @override
   void initState() {
     super.initState();
-    // TODO: Call getPreviousSearches
+    getPreviousSearches();
     searchTextController = TextEditingController(text: '');
     _scrollController.addListener(() {
       final triggerFetchMoreSize =
@@ -55,7 +56,22 @@ class RecipeListState extends State<RecipeList> {
     super.dispose();
   }
 
-  // TODO: Add savePreviousSearches
+  void savePreviousSearches() async {
+    final prefs = await SharedPreferences.getInstance();
+    prefs.setStringList(prefSearchKey, previousSearches);
+  }
+
+  void getPreviousSearches() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.containsKey(prefSearchKey)) {
+      final searches = prefs.getStringList(prefSearchKey);
+      if (searches != null) {
+        previousSearches = searches;
+      } else {
+        previousSearches = <String>[];
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -83,7 +99,16 @@ class RecipeListState extends State<RecipeList> {
         child: Row(
           children: [
             // Replace
-            const Icon(Icons.search),
+            IconButton(
+              icon: const Icon(Icons.search),
+              onPressed: () {
+                startSearch(searchTextController.text);
+                final currentFocus = FocusScope.of(context);
+                if (!currentFocus.hasPrimaryFocus) {
+                  currentFocus.unfocus();
+                }
+              },
+            ),
             const SizedBox(
               width: 6.0,
             ),
@@ -94,7 +119,8 @@ class RecipeListState extends State<RecipeList> {
                   Expanded(
                     child: TextField(
                       decoration: const InputDecoration(
-                          border: InputBorder.none, hintText: 'Search'),
+                          border: InputBorder.none,
+                          hintText: 'Search your sh** MF'),
                       autofocus: false,
                       controller: searchTextController,
                       onChanged: (query) => {
@@ -123,7 +149,20 @@ class RecipeListState extends State<RecipeList> {
     );
   }
 
-  // TODO: Add startSearch
+  void startSearch(String value) {
+    setState(() {
+      currentSearchList.clear();
+      currentCount = 0;
+      currentEndPosition = pageCount;
+      currentStartPosition = 0;
+      hasMore = true;
+      value = value.trim();
+      if (!previousSearches.contains(value)) {
+        previousSearches.add(value);
+        savePreviousSearches();
+      }
+    });
+  }
 
   Widget _buildRecipeLoader(BuildContext context) {
     if (searchTextController.text.length < 3) {
