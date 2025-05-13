@@ -1,6 +1,8 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:recipes/ui/colors.dart';
+import 'package:recipes/ui/widgets/custom_dropdown.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 // TODO: Add imports
 
@@ -114,34 +116,49 @@ class RecipeListState extends State<RecipeList> {
             ),
             // *** Start Replace
             Expanded(
-              child: Row(
-                children: <Widget>[
-                  Expanded(
+                child: Row(
+              children: [
+                Expanded(
                     child: TextField(
-                      decoration: const InputDecoration(
-                          border: InputBorder.none,
-                          hintText: 'Search your sh** MF'),
-                      autofocus: false,
-                      controller: searchTextController,
-                      onChanged: (query) => {
-                        if (query.length >= 3)
-                          {
-                            // Rebuild list
-                            setState(
-                              () {
-                                currentSearchList.clear();
-                                currentCount = 0;
-                                currentEndPosition = pageCount;
-                                currentStartPosition = 0;
-                              },
-                            )
-                          }
-                      },
-                    ),
+                  decoration: const InputDecoration(
+                      border: InputBorder.none, hintText: "Seâ̠rc̴̦h "),
+                  autofocus: false,
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (value) {
+                    if (!previousSearches.contains(value)) {
+                      previousSearches.add(value);
+                      savePreviousSearches();
+                    }
+                  },
+                  controller: searchTextController,
+                )),
+                PopupMenuButton<String>(
+                  icon: const Icon(
+                    Icons.arrow_drop_down,
+                    color: lightGrey,
                   ),
-                ],
-              ),
-            ),
+                  onSelected: (String value) {
+                    searchTextController.text = value;
+                    startSearch(searchTextController.text);
+                  },
+                  itemBuilder: (BuildContext context) {
+                    return previousSearches
+                        .map<CustomDropdownMenuItem<String>>((String value) {
+                      return CustomDropdownMenuItem<String>(
+                        value: value,
+                        text: value,
+                        callback: () {
+                          setState(() {
+                            previousSearches.remove(value);
+                            Navigator.pop(context);
+                          });
+                        },
+                      );
+                    }).toList();
+                  },
+                )
+              ],
+            ))
             // *** End Replace
           ],
         ),
